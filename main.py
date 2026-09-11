@@ -26,6 +26,9 @@ def current_streak(habit, habits):
         return 0
     streak = 0
     habits[habit].sort()
+    last_date = datetime.datetime.strptime(habits[habit][-1], '%d.%m.%Y')
+    if (datetime.datetime.now()-last_date).days > 1:
+        return 0
     for i in range(len(habits[habit])-1,0,-1):
         d1 = datetime.datetime.strptime(habits[habit][i], '%d.%m.%Y')
         d2 = datetime.datetime.strptime(habits[habit][i-1], '%d.%m.%Y')
