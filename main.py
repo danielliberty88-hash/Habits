@@ -22,16 +22,17 @@ def save_habits(data):
         json.dump(data, f, ensure_ascii=False, indent=2 )
 
 def current_streak(habit, habits):
-    if not habits[habit]:
+    dates = habits[habit]['dates']
+    if not dates:
         return 0
     streak = 0
-    habits[habit].sort()
-    last_date = datetime.datetime.strptime(habits[habit][-1], '%d.%m.%Y')
+    dates.sort()
+    last_date = datetime.datetime.strptime(dates[-1], '%d.%m.%Y')
     if (datetime.datetime.now()-last_date).days > 1:
         return 0
-    for i in range(len(habits[habit])-1,0,-1):
-        d1 = datetime.datetime.strptime(habits[habit][i], '%d.%m.%Y')
-        d2 = datetime.datetime.strptime(habits[habit][i-1], '%d.%m.%Y')
+    for i in range(len(dates) - 1, 0, -1):
+        d1 = datetime.datetime.strptime(dates[i], '%d.%m.%Y')
+        d2 = datetime.datetime.strptime(dates[i - 1], '%d.%m.%Y')
         if (d1-d2).days != 1:
             break
         else:
@@ -52,11 +53,11 @@ async def start_handler(message: Message):
 async def add_habit_handler(message: Message, command: CommandObject):
     habits = load_habits()
     habit_name = command.args
-    if not habit_name:
-        return await message.answer('''Введите команду коректно:
-        /add_habit привычка''')
+    if not habit_name or not habit_name.strip():
+        return await message.answer('Введите название привычки!!!')
+    habit_name = habit_name.strip().lower()
     if habit_name not in habits:
-        habits.setdefault(habit_name, [])
+        habits.setdefault(habit_name, {"dates": [], "type": "daily"})
         save_habits(habits)
         await message.answer('Привычка успешно добавлена')
     else:
@@ -66,11 +67,14 @@ async def add_habit_handler(message: Message, command: CommandObject):
 async def done_handler(message: Message, command: CommandObject):
     habits = load_habits()
     habit_name = command.args
+    if not habit_name or not habit_name.strip():
+        return await message.answer('Введите название привычки!!!')
+    habit_name = habit_name.strip().lower()
     if habit_name not in habits:
         return await message.answer('Привычка еще не добавлена!')
     today = datetime.datetime.now().strftime('%d.%m.%Y')
-    if today not in habits[habit_name]:
-        habits[habit_name].append(today)
+    if today not in habits[habit_name]['dates']:
+        habits[habit_name]['dates'].append(today)
         await message.answer(f'Привычка {habit_name} выполнена!')
     else:
         await message.answer(f'Привычка {habit_name} уже выполнена!')
@@ -88,8 +92,11 @@ async def list_handler(message: Message):
 
 @dp.message(Command('del'))
 async def del_handler(message: Message, command: CommandObject):
-    habit_name = command.args
     habits = load_habits()
+    habit_name = command.args
+    if not habit_name or not habit_name.strip():
+        return await message.answer('Введите название привычки!!!')
+    habit_name = habit_name.strip().lower()
     if not habits:
         return await message.answer('Удалять нечего!')
     elif habit_name == 'all':
@@ -100,6 +107,14 @@ async def del_handler(message: Message, command: CommandObject):
         habits.pop(habit_name)
     save_habits(habits)
     await message.answer('Удаление прошло успешно')
+
+@dp.message(Command('help'))
+async def help_handler(message: Message):
+    await message.answer('''/add_habit <название> — добавить привычку
+/done <название> — отметить выполнение
+/list — список привычек со стриками
+/del <название или all> — удалить привычку
+/help — это сообщение''')
 
 async def main():
     await dp.start_polling(bot)
