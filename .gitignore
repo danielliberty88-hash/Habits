@@ -1,3 +1,6 @@
 .env
-.venv
-habits.json
+__pycache__/
+*.pyc
+.venv/
+habits_*.json
+.idea/
